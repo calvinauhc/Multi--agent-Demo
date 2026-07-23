@@ -29,7 +29,6 @@ function App() {
 
   // Final Output States
   const [research, setResearch] = useState("");
-  const [analysis, setAnalysis] = useState("");
   const [post, setPost] = useState("");
 
   const handleGenerate = () => {
@@ -43,7 +42,6 @@ function App() {
     setActiveStatus("");
     setProgress(0);
     setResearch("");
-    setAnalysis("");
     setPost("");
 
     // Build Server Sent Events connection url
@@ -114,8 +112,6 @@ function App() {
         const payload = JSON.parse(event.data);
         if (payload.stage === "research") {
           setResearch(payload.data);
-        } else if (payload.stage === "analysis") {
-          setAnalysis(payload.data);
         } else if (payload.stage === "writer") {
           setPost(payload.data);
         }
@@ -261,7 +257,6 @@ function App() {
 
             <OutputViewports
               research={research}
-              analysis={analysis}
               post={post}
             />
           </div>

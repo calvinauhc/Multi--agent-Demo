@@ -1,23 +1,20 @@
 import React, { useState } from "react";
-import { FileText, Award, Send, Copy, Check, Eye } from "lucide-react";
+import { FileText, Send, Copy, Check, Eye } from "lucide-react";
 
 interface OutputViewportsProps {
   research: string;
-  analysis: string;
   post: string;
 }
 
 export const OutputViewports: React.FC<OutputViewportsProps> = ({
   research,
-  analysis,
   post,
 }) => {
-  const [activeTab, setActiveTab] = useState<"research" | "analysis" | "post">("post");
+  const [activeTab, setActiveTab] = useState<"research" | "post">("research");
   const [copied, setCopied] = useState(false);
 
   const handleCopy = () => {
-    // If we have a post, let's copy it to the clipboard
-    const textToCopy = activeTab === "post" ? post : activeTab === "analysis" ? analysis : research;
+    const textToCopy = activeTab === "post" ? post : research;
     if (textToCopy) {
       navigator.clipboard.writeText(textToCopy);
       setCopied(true);
@@ -27,24 +24,6 @@ export const OutputViewports: React.FC<OutputViewportsProps> = ({
 
   const tabs = [
     {
-      id: "post" as const,
-      label: "Final IG Post",
-      icon: Send,
-      color: "text-violet-400 border-violet-500",
-      activeBg: "bg-violet-600/10",
-      content: post,
-      placeholder: "The final Instagram post layout (caption, hashtags, and DALL-E visual prompts) will appear here.",
-    },
-    {
-      id: "analysis" as const,
-      label: "Content Strategy",
-      icon: Award,
-      color: "text-emerald-400 border-emerald-500",
-      activeBg: "bg-emerald-600/10",
-      content: analysis,
-      placeholder: "The Analyst's strategic structure (user personas, slide storyboards, emotional hooks) will appear here.",
-    },
-    {
       id: "research" as const,
       label: "Market Research",
       icon: FileText,
@@ -52,6 +31,15 @@ export const OutputViewports: React.FC<OutputViewportsProps> = ({
       activeBg: "bg-blue-600/10",
       content: research,
       placeholder: "The Researcher's market summaries and the Reviewer's compliance audits will appear here.",
+    },
+    {
+      id: "post" as const,
+      label: "Final IG Post",
+      icon: Send,
+      color: "text-violet-400 border-violet-500",
+      activeBg: "bg-violet-600/10",
+      content: post,
+      placeholder: "The final Instagram post layout (caption, hashtags, and DALL-E visual prompts) will appear here.",
     },
   ];
 
@@ -117,10 +105,9 @@ export const OutputViewports: React.FC<OutputViewportsProps> = ({
       <div className="flex-1 overflow-y-auto p-6 bg-slate-950/40 relative">
         {currentTab.content ? (
           <div className="prose prose-invert max-w-none text-xs text-slate-300 space-y-4 whitespace-pre-wrap leading-relaxed font-normal">
-            {/* Direct formatted markdown rendering inside a simple, highly-legible block */}
+            {/* Direct formatted markdown rendering */}
             <div className="space-y-3">
               {currentTab.content.split("\n").map((line, idx) => {
-                // Render custom simple markers to look like headings or checklists
                 if (line.startsWith("### ")) {
                   return (
                     <h4 key={idx} className="text-slate-100 font-bold text-sm border-b border-slate-800/80 pb-1 mt-5 first:mt-0 uppercase tracking-wide">
@@ -159,7 +146,7 @@ export const OutputViewports: React.FC<OutputViewportsProps> = ({
             <div className="w-12 h-12 rounded-full border border-slate-800 flex items-center justify-center text-lg text-slate-600 mb-3 bg-slate-950">
               📊
             </div>
-            <p className="text-sm font-medium text-slate-500 max-w-xs leading-relaxed">
+            <p className="text-sm font-medium text-slate-550 max-w-xs leading-relaxed">
               {currentTab.placeholder}
             </p>
           </div>

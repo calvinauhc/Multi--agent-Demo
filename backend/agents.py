@@ -198,8 +198,8 @@ class MultiAgentOrchestrator:
             await asyncio.sleep(1.0)
 
             task_writing = Task(
-                description=f"Draft the finalized Instagram copy. Use an attention-grabbing pattern-interrupt hook, structured body spacing with emojis, a strong CTA, a bundle of 15+ real estate hashtags, and a detailed DALL-E/Midjourney cinematic photo prompt representing the cover slide. Based on this strategy:\n\n{analysis_text}",
-                expected_output=f"A viral Instagram post caption with bullet spacing, hashtags, and a Midjourney prompt.",
+                description=f"Draft the finalized Instagram copy. Keep the caption content extremely concise and strictly within 200 words total. Use an attention-grabbing pattern-interrupt hook, structured body spacing with emojis, a strong CTA, a bundle of 15+ real estate hashtags, and a detailed DALL-E/Midjourney cinematic photo prompt representing the cover slide. Based on this strategy:\n\n{analysis_text}",
+                expected_output=f"A highly concise viral Instagram post caption under 200 words with bullet spacing, hashtags, and a Midjourney prompt.",
                 agent=writer_agent
             )
 
@@ -472,32 +472,28 @@ class MultiAgentOrchestrator:
 
         tone_prefix = "💼 **MARKET REPORT** 💼" if self.tone == "professional" else "🔥 **HOT TAKE** 🔥"
         writing = f"""{tone_prefix}
-**Is city-center vanity blinding you to the real real estate cash cows in {location.split(',')[0]}?** 👇
+**Is city-center vanity blinding you to the real cash cows in {location.split(',')[0]}?** 👇
 
-Everyone dreams of owning the most expensive downtown penthouse. But if you’re looking at the actual MATH, specialized {prop_type} assets are quietly walking away with the prize. 🏆
+Ditching the downtown luxury penthouse for specialized {prop_type} yields is the ultimate smart move right now. 🏆
 
-Here is what the latest market intelligence shows:
+The real numbers don't lie:
+📊 **The Yield Gap**: Premium city-center units yield a tight {yields_landed}, while mature regional {prop_type} properties hold strong at **{yield_range}**!
+🌱 **The Smart Shift**: Buyers aren't seeking gilded lobbies—they want green-materials, smart-home tech, and flexible workspaces.
+📈 **The Appreciation**: With a nominal **{cagr} CAGR** over 5 years (adjusted for a {inflation} net inflation index), your real asset value is growing exceptionally strong.
 
-📊 **The Yield Gap**: While premium city-center luxury units average a tight {yields_landed} rental yield, mature regional {prop_type} developments are holding strong between **{yield_range}**!
+💡 **The Bottom Line**: Skip the vanity; buy for utility and net yield!
 
-🌱 **The Smart Buyer Shift**: {demographics.split(' prioritizing')[0]} aren't looking for gilded elevators—they want sustainable green-materials, smart-home integration, and flexible workspace floorplans.
-
-📈 **The Appreciation Factor**: Over the last 5 years, prime assets in this sector enjoyed a **{cagr} CAGR** (nominal). When adjusted for a {inflation} net inflation index, your real asset value is still growing exceptionally strong.
-
-💡 **The Bottom Line**: Don’t buy for vanity; buy for utility and yield. Specialized properties are offering premium returns at a fraction of the entry cost.
-
-What's your move? Are you staying downtown, or heading towards {prop_type}? Let us know in the comments! 💬
+What's your move? Stay downtown, or shift to {prop_type}? 💬
 
 ---
 
-### 🏷️ HASHTAG BUNDLE (Copy & Paste):
-#PropertyInvesting #{location.split(',')[0].replace(' ', '')}RealEstate #RealEstateTrends #{prop_type.replace(' & ', '').replace(' ', '')} #PassiveIncome #RentalYield #HomeBuyingGuide #SmartHomeDesign #PropertyMarket2026 #WealthBuilding #FinancialFreedom #InvestmentAdviceDisclosure #EstatePlanning
+### 🏷️ HASHTAG BUNDLE:
+#PropertyInvesting #{location.split(',')[0].replace(' ', '')}RealEstate #{prop_type.replace(' & ', '').replace(' ', '')} #PassiveIncome #RentalYield #PropertyMarket2026 #WealthBuilding #AdvisoryDisclosure
 
 ---
 
-### 🎨 IMAGE GENERATION PROMPT:
-**Prompt for Midjourney / DALL-E 3**:
-*{photo_prompt_details} Shot on 35mm lens, realistic, photorealistic, cinematic lighting, 8k resolution, architectural digest style. --ar 4:5*"""
+### 🎨 MIDJOURNEY PROMPT:
+*{photo_prompt_details} Cinematic lighting, architectural digest style. --ar 4:5*"""
 
         yield self._format_event("result", {"stage": "writer", "data": writing})
 
