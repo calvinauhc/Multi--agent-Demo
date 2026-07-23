@@ -1,0 +1,43 @@
+# Node dependencies
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Python dependencies
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Environment variables
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Output archives
+real_estate_ai_writer.tar.gz
+
+# Claude temporary configurations
+.claude/
