@@ -29,8 +29,6 @@ function App() {
 
   // Final Output States
   const [research, setResearch] = useState("");
-  const [analysis, setAnalysis] = useState("");
-  const [post, setPost] = useState("");
 
   const handleGenerate = () => {
     if (!query.trim()) return;
@@ -43,8 +41,6 @@ function App() {
     setActiveStatus("");
     setProgress(0);
     setResearch("");
-    setAnalysis("");
-    setPost("");
 
     // Build Server Sent Events connection url
     let baseUrl = "http://localhost:8000/api/generate";
@@ -114,10 +110,6 @@ function App() {
         const payload = JSON.parse(event.data);
         if (payload.stage === "research") {
           setResearch(payload.data);
-        } else if (payload.stage === "analysis") {
-          setAnalysis(payload.data);
-        } else if (payload.stage === "writer") {
-          setPost(payload.data);
         }
       } catch (err) {
         console.error("Error parsing result payload:", err);
@@ -161,9 +153,9 @@ function App() {
             </div>
             <div>
               <h1 className="text-lg font-bold tracking-tight text-white m-0 p-0 flex items-center gap-2">
-                Real Estate AI Writer <span className="text-[10px] bg-violet-600/30 text-violet-300 font-semibold px-2 py-0.5 rounded-full border border-violet-500/20">v2.0</span>
+                Real Estate AI Researcher <span className="text-[10px] bg-blue-650/30 text-blue-300 font-semibold px-2 py-0.5 rounded-full border border-blue-500/20">v2.1</span>
               </h1>
-              <p className="text-[11px] text-slate-400 mt-0.5 font-medium uppercase tracking-wider">Multi-Agent Research & Social Composer</p>
+              <p className="text-[11px] text-slate-400 mt-0.5 font-medium uppercase tracking-wider">Agentic Property Market Intelligence</p>
             </div>
           </div>
 
@@ -205,31 +197,25 @@ function App() {
           {/* Quick Informational Guide */}
           <div className="bg-slate-900/40 border border-slate-900 rounded-xl p-4 space-y-3">
             <h4 className="text-xs font-bold text-slate-400 tracking-wider uppercase flex items-center gap-1.5">
-              <Layers className="w-3.5 h-3.5 text-violet-400" /> Collaboration Scheme
+              <Layers className="w-3.5 h-3.5 text-blue-400" /> Research Scope
             </h4>
             <div className="space-y-2.5 text-xs text-slate-400">
               <div className="flex gap-2.5 items-start">
                 <span className="text-base leading-none">🔍</span>
                 <p>
-                  <strong>Researcher:</strong> Analyzes raw market indices (transaction values, yields, demographics) matching your topic.
-                </p>
-              </div>
-              <div className="flex gap-2.5 items-start">
-                <span className="text-base leading-none">🧐</span>
-                <p>
-                  <strong>Reviewer:</strong> Audits metrics for accuracy and appends compliance disclaimers. Refines research reports.
+                  <strong>Researcher:</strong> Scours transaction indices, rental yields, and capital growth metrics matching your specific query.
                 </p>
               </div>
               <div className="flex gap-2.5 items-start">
                 <span className="text-base leading-none">📊</span>
                 <p>
-                  <strong>Analyst:</strong> Strategizes visual storyboards, emotional triggers, and audience alignment.
+                  <strong>Data Engine:</strong> Computes real net CAGR adjusted for Net Inflation index parameters.
                 </p>
               </div>
               <div className="flex gap-2.5 items-start">
-                <span className="text-base leading-none">✍️</span>
+                <span className="text-base leading-none">📋</span>
                 <p>
-                  <strong>Writer:</strong> Crafts final viral captions, hook structures, hashtag sets, and realistic image prompt guides.
+                  <strong>Compliance:</strong> Generates standard investment disclosure warnings and formal market indices metadata.
                 </p>
               </div>
             </div>
@@ -261,8 +247,6 @@ function App() {
 
             <OutputViewports
               research={research}
-              analysis={analysis}
-              post={post}
             />
           </div>
         </div>
@@ -270,7 +254,7 @@ function App() {
 
       {/* Footer */}
       <footer className="border-t border-slate-900 bg-slate-950/40 p-4 text-center text-xs text-slate-500 mt-auto">
-        <p>© 2026 Property Agentic Social Platform. Powered by Server-Sent Events & FastAPI.</p>
+        <p>© 2026 Property Agentic Market Research. Powered by Server-Sent Events & FastAPI.</p>
       </footer>
     </div>
   );
