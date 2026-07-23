@@ -37,7 +37,7 @@ class MultiAgentOrchestrator:
 
     async def run(self) -> AsyncGenerator[Dict[str, Any], None]:
         """
-        Orchestrates CrewAI Market Research Agent execution.
+        Orchestrates CrewAI collaboration between Researcher, Reviewer, Analyst, and Writer.
         Yields serialized JSON events streamed to the client via SSE.
         """
         yield self._format_event("status", {"agent": "Researcher", "status": "thinking", "progress": 10})
@@ -47,7 +47,7 @@ class MultiAgentOrchestrator:
         yield self._format_event("log", {
             "agent": "Researcher",
             "action": "CrewAI Startup",
-            "message": f"Initializing CrewAI with Market Research Agent (Senior Real Estate Trend Analyst). Tone: '{self.tone}'."
+            "message": f"Initializing CrewAI with 4 Agents (Researcher, Reviewer, Analyst, Writer) in sequential pipeline. Tone: '{self.tone}'."
         })
         await asyncio.sleep(1.2)
 
@@ -68,7 +68,7 @@ class MultiAgentOrchestrator:
             })
             await asyncio.sleep(1.0)
 
-            # 2. Define the CrewAI Researcher Agent
+            # 2. Define the CrewAI Agents
             researcher_agent = Agent(
                 role="Senior Real Estate Trend Analyst",
                 goal=f"Perform exhaustive research on local and global real estate developments matching: '{self.query}'",
@@ -78,8 +78,35 @@ class MultiAgentOrchestrator:
                 allow_delegation=False
             )
 
-            # 3. Define the CrewAI Research Task
-            yield self._format_event("status", {"agent": "Researcher", "status": "running_task", "progress": 30})
+            reviewer_agent = Agent(
+                role="Real Estate Audit & Compliance Officer",
+                goal="Critique property research reports for inflation adjustments, asset segregation, and legal disclosures.",
+                backstory="You are a meticulous auditor. You cross-examine transaction statistics, ensure CAGR calculations note inflation, and append necessary regulatory advice disclosures.",
+                llm=llm_instance,
+                verbose=True,
+                allow_delegation=False
+            )
+
+            analyst_agent = Agent(
+                role="Consumer Psychology & Property Strategist",
+                goal="Deconstruct refined property reports into high-converting consumer hooks, core angles, and structural storyboards.",
+                backstory="You are a master of social media psychology. You convert cold housing metrics into compelling, scroll-stopping narratives.",
+                llm=llm_instance,
+                verbose=True,
+                allow_delegation=False
+            )
+
+            writer_agent = Agent(
+                role="Creative Property Copywriter & Midjourney Visualizer",
+                goal=f"Translate content strategies into polished, high-converting Instagram post copy utilizing tone: '{self.tone}' and descriptive Midjourney prompt templates.",
+                backstory="You are a world-class real estate copywriter. You specialize in viral bullet formatting, persuasive Calls to Action, relevant hashtags, and cinematic AI-art instructions.",
+                llm=llm_instance,
+                verbose=True,
+                allow_delegation=False
+            )
+
+            # 3. Define the CrewAI Sequential Tasks
+            yield self._format_event("status", {"agent": "Researcher", "status": "running_task", "progress": 20})
             yield self._format_event("log", {
                 "agent": "Researcher",
                 "action": "Research Task",
@@ -93,9 +120,11 @@ class MultiAgentOrchestrator:
                 agent=researcher_agent
             )
 
+            # To capture intermediate outputs cleanly in an async stream, we run them in sequence
+            # using CrewAI's step execution or run tasks sequentially. Let's trigger them.
             loop = asyncio.get_event_loop()
 
-            # Run Research
+            # Step A: Run Research
             crew_research = Crew(agents=[researcher_agent], tasks=[task_research], verbose=True)
             research_output = await loop.run_in_executor(None, crew_research.kickoff)
             research_text = str(research_output)
@@ -103,13 +132,91 @@ class MultiAgentOrchestrator:
             yield self._format_event("log", {
                 "agent": "Researcher",
                 "action": "Research Completed",
-                "message": f"CrewAI Researcher completed exhaustive market research report for: '{self.query}'."
+                "message": "CrewAI Researcher completed initial market research report."
             })
             yield self._format_event("result", {"stage": "research", "data": research_text})
 
+            # Step B: Run Review
+            yield self._format_event("status", {"agent": "Reviewer", "status": "thinking", "progress": 40})
+            yield self._format_event("log", {
+                "agent": "Reviewer",
+                "action": "Compliance Task",
+                "message": "CrewAI Reviewer starting audit of the Researcher's report..."
+            })
+            await asyncio.sleep(1.0)
+
+            task_review = Task(
+                description=f"Critique and refine this research document. Verify that rental yields distinguish landed vs condos, adjust CAGR values for net-inflation, list specific source credentials, and append a general financial disclaimer.\n\nResearch to Audit:\n{research_text}",
+                expected_output="An audited real estate intelligence report with revisions, inflation factors, and proper disclaimers.",
+                agent=reviewer_agent
+            )
+
+            crew_review = Crew(agents=[reviewer_agent], tasks=[task_review], verbose=True)
+            review_output = await loop.run_in_executor(None, crew_review.kickoff)
+            review_text = str(review_output)
+
+            yield self._format_event("log", {
+                "agent": "Reviewer",
+                "action": "Audit Completed",
+                "message": f"Review complete. Feedback: '{review_text[:100]}...'"
+            })
+            yield self._format_event("result", {"stage": "review", "data": review_text})
+
+            # Step C: Run Analyst
+            yield self._format_event("status", {"agent": "Analyst", "status": "thinking", "progress": 60})
+            yield self._format_event("log", {
+                "agent": "Analyst",
+                "action": "Strategy Task",
+                "message": "CrewAI Analyst is mapping user personas, visual carousels, and emotional hooks..."
+            })
+            await asyncio.sleep(1.0)
+
+            task_analysis = Task(
+                description=f"Construct a compelling Instagram Strategy. Detail the Target Audience, the core social angle, and psychology hooks. Then outline a 5-slide Carousel storyboard layout based on this audited research:\n\n{review_text}",
+                expected_output="A comprehensive 5-slide carousel storyboard, core angles, and psychology hooks outline.",
+                agent=analyst_agent
+            )
+
+            crew_analysis = Crew(agents=[analyst_agent], tasks=[task_analysis], verbose=True)
+            analysis_output = await loop.run_in_executor(None, crew_analysis.kickoff)
+            analysis_text = str(analysis_output)
+
+            yield self._format_event("log", {
+                "agent": "Analyst",
+                "action": "Strategy Finalized",
+                "message": "CrewAI Analyst formulated target persona, slide headlines, and scroll-stoppers."
+            })
+            yield self._format_event("result", {"stage": "analysis", "data": analysis_text})
+
+            # Step D: Run Writer
+            yield self._format_event("status", {"agent": "Writer", "status": "thinking", "progress": 80})
+            yield self._format_event("log", {
+                "agent": "Writer",
+                "action": "Copywriting Task",
+                "message": f"CrewAI Writer is drafting high-converting social caption using tone: '{self.tone}'..."
+            })
+            await asyncio.sleep(1.0)
+
+            task_writing = Task(
+                description=f"Draft the finalized Instagram copy. Use an attention-grabbing pattern-interrupt hook, structured body spacing with emojis, a strong CTA, a bundle of 15+ real estate hashtags, and a detailed DALL-E/Midjourney cinematic photo prompt representing the cover slide. Based on this strategy:\n\n{analysis_text}",
+                expected_output=f"A viral Instagram post caption with bullet spacing, hashtags, and a Midjourney prompt.",
+                agent=writer_agent
+            )
+
+            crew_writer = Crew(agents=[writer_agent], tasks=[task_writing], verbose=True)
+            writer_output = await loop.run_in_executor(None, crew_writer.kickoff)
+            writer_text = str(writer_output)
+
+            yield self._format_event("log", {
+                "agent": "Writer",
+                "action": "Writing Completed",
+                "message": "CrewAI Writer successfully completed Instagram caption and Midjourney storyboard prompt!"
+            })
+            yield self._format_event("result", {"stage": "writer", "data": writer_text})
+
             # Finalize CrewAI Sequential Execution
             yield self._format_event("status", {"agent": "Done", "status": "idle", "progress": 100})
-            yield self._format_event("done", {"message": "CrewAI Researcher completed analysis. Job Complete!"})
+            yield self._format_event("done", {"message": "CrewAI agents successfully orchestrated. Job Complete!"})
 
         except Exception as e:
             yield self._format_event("log", {
@@ -257,9 +364,6 @@ class MultiAgentOrchestrator:
         })
         await asyncio.sleep(1.3)
 
-        # Net inflation index math
-        net_appreciation = float(cagr.replace('%', '')) - float(inflation.replace('%', ''))
-
         research_body = f"""### MARKET INTELLIGENCE REPORT: Property Estate Trends for '{self.query}'
 
 1. **Current Transaction Climate**:
@@ -269,20 +373,134 @@ class MultiAgentOrchestrator:
 
 2. **Yields & Returns in {location}**:
    - Average rental yield in metropolitan suburban hubs/specialized sectors ({prop_type}) is holding steady at **{yield_range}**.
-   - Landed single-family property rental yields are holding around **{yields_landed}**.
    - Prime residential asset price appreciation has averaged **{cagr} CAGR** over the last 5 years (nominal).
-   - Adjusted for a **{inflation} net inflation index**, your real net asset value growth is approximately **{net_appreciation:.1f}% net CAGR**.
 
-3. **Demographics & Target Audience**:
+3. **Demographics**:
    - {demographics}
    - Older demographics looking to downsize are actively seeking secure, low-maintenance boutique spaces with premium management services.
 
----
-*Sources: {sources}, Global Estate Analytics 2026, National Housing Registry.*
-*Disclaimer: This document provides general market insights. It does not constitute certified financial, legal, or investment advisory.*"""
+*Sources: {sources}, Global Estate Analytics 2026, National Housing Registry.*"""
 
         yield self._format_event("result", {"stage": "research", "data": research_body})
 
+        # 2. Simulated Reviewer logs
+        yield self._format_event("status", {"agent": "Reviewer", "status": "thinking", "progress": 35})
+        yield self._format_event("log", {
+            "agent": "Reviewer",
+            "action": "Compliance Check",
+            "message": f"Auditing metrics in {location}. Reviewing rental yields and CAGR for landed properties vs condos."
+        })
+        await asyncio.sleep(1.3)
+        yield self._format_event("log", {
+            "agent": "Reviewer",
+            "action": "Feedback Drafted",
+            "message": "Researcher must adjust CAGR calculations for inflation and add proper advisory disclosures."
+        })
+        await asyncio.sleep(1.3)
+
+        critique = f"""**CRITIQUE & COMPLIANCE FEEDBACK**:
+- **Source Verification**: The {yield_range} rental yields are accurate for {prop_type} in {location}, but landed single-family properties are closer to {yields_landed}. This must be specified.
+- **CAGR Accuracy**: The CAGR figures of {cagr} are nominal. Please specify that this is raw appreciation and note the net-inflation rate (currently {inflation}).
+- **Compliance Rule**: Real estate advisory disclosure warning must be noted. We are providing general insights, not certified financial or investment advice.
+- **Tone check**: Ensure the output does not make speculative promises about guaranteed returns."""
+
+        yield self._format_event("result", {"stage": "review", "data": critique})
+
+        # 2.5 Simulated Revision
+        yield self._format_event("status", {"agent": "Researcher", "status": "revising", "progress": 50})
+        yield self._format_event("log", {
+            "agent": "Researcher",
+            "action": "Data Revision",
+            "message": f"Adjusting figures based on Compliance review: Separating {prop_type} yields and calculating net CAGR."
+        })
+        await asyncio.sleep(1.3)
+
+        revised_research = research_body + f"\n\n[REVISED WITH COMPLIANCE SUGGESTIONS]\n- Landed property rental yields in {location} clarified (approx {yields_landed}).\n- Adjusted prime appreciation ({cagr} nominal) for inflation ({inflation} net inflation index).\n- Disclaimer: General market information. Not financial advisory."
+        yield self._format_event("result", {"stage": "research", "data": revised_research})
+
+        # 3. Simulated Analyst logs
+        yield self._format_event("status", {"agent": "Analyst", "status": "thinking", "progress": 65})
+        yield self._format_event("log", {
+            "agent": "Analyst",
+            "action": "Content Framing",
+            "message": f"Designing visual hooks for {location}. Decided on: '{prop_type} yields vs. Downtown luxury vanity'."
+        })
+        await asyncio.sleep(1.3)
+        yield self._format_event("log", {
+            "agent": "Analyst",
+            "action": "Storyboard Ready",
+            "message": f"Proposed a 5-slide carousel layout focusing on young buyer shifts in {location.split(',')[0]}."
+        })
+        await asyncio.sleep(1.3)
+
+        analysis = f"""### STRATEGIC SOCIAL OUTLINE: "{self.query}"
+
+**1. Target Audience Persona**:
+- {demographics}
+
+**2. Content Core Angle**:
+- {core_message}
+
+**3. Psychology Hooks**:
+- **Pattern Interrupt**: "Stop looking at city-core vanity assets. The real smart money is looking elsewhere."
+- **Authority Hook**: Backed by actual {sources.split(',')[0]} statistics and inflation-adjusted CAGR.
+
+**4. Suggested Visual Layout**:
+- **Carousel Post (5 Slides)**:
+  - Slide 1: Hook Headline + High-quality image of a modern {prop_type} build in {location}.
+  - Slide 2: The comparison graph (suburban/specialized yield {yield_range} vs. city-core {yields_landed}).
+  - Slide 3: Demographic shift: Why buyers are choosing flexible, work-ready homes.
+  - Slide 4: Real math: How inflation ({inflation}) affects your nominal {cagr} asset appreciation.
+  - Slide 5: Call to Action (CTA) pointing to the link in bio."""
+
+        yield self._format_event("result", {"stage": "analysis", "data": analysis})
+
+        # 4. Simulated Writer logs
+        yield self._format_event("status", {"agent": "Writer", "status": "thinking", "progress": 85})
+        yield self._format_event("log", {
+            "agent": "Writer",
+            "action": "Drafting Post Copy",
+            "message": f"Formulating caption using tone: '{self.tone}' and building the call-to-action."
+        })
+        await asyncio.sleep(1.3)
+        yield self._format_event("log", {
+            "agent": "Writer",
+            "action": "Creating AI Art Recipe",
+            "message": f"Formulating detailed Midjourney prompts with {prop_type} architectural aesthetics."
+        })
+        await asyncio.sleep(1.3)
+
+        tone_prefix = "💼 **MARKET REPORT** 💼" if self.tone == "professional" else "🔥 **HOT TAKE** 🔥"
+        writing = f"""{tone_prefix}
+**Is city-center vanity blinding you to the real real estate cash cows in {location.split(',')[0]}?** 👇
+
+Everyone dreams of owning the most expensive downtown penthouse. But if you’re looking at the actual MATH, specialized {prop_type} assets are quietly walking away with the prize. 🏆
+
+Here is what the latest market intelligence shows:
+
+📊 **The Yield Gap**: While premium city-center luxury units average a tight {yields_landed} rental yield, mature regional {prop_type} developments are holding strong between **{yield_range}**!
+
+🌱 **The Smart Buyer Shift**: {demographics.split(' prioritizing')[0]} aren't looking for gilded elevators—they want sustainable green-materials, smart-home integration, and flexible workspace floorplans.
+
+📈 **The Appreciation Factor**: Over the last 5 years, prime assets in this sector enjoyed a **{cagr} CAGR** (nominal). When adjusted for a {inflation} net inflation index, your real asset value is still growing exceptionally strong.
+
+💡 **The Bottom Line**: Don’t buy for vanity; buy for utility and yield. Specialized properties are offering premium returns at a fraction of the entry cost.
+
+What's your move? Are you staying downtown, or heading towards {prop_type}? Let us know in the comments! 💬
+
+---
+
+### 🏷️ HASHTAG BUNDLE (Copy & Paste):
+#PropertyInvesting #{location.split(',')[0].replace(' ', '')}RealEstate #RealEstateTrends #{prop_type.replace(' & ', '').replace(' ', '')} #PassiveIncome #RentalYield #HomeBuyingGuide #SmartHomeDesign #PropertyMarket2026 #WealthBuilding #FinancialFreedom #InvestmentAdviceDisclosure #EstatePlanning
+
+---
+
+### 🎨 IMAGE GENERATION PROMPT:
+**Prompt for Midjourney / DALL-E 3**:
+*{photo_prompt_details} Shot on 35mm lens, realistic, photorealistic, cinematic lighting, 8k resolution, architectural digest style. --ar 4:5*"""
+
+        yield self._format_event("result", {"stage": "writer", "data": writing})
+
         # Done
         yield self._format_event("status", {"agent": "Done", "status": "idle", "progress": 100})
-        yield self._format_event("done", {"message": f"Market research analysis for '{self.query}' successfully completed!"})
+        yield self._format_event("done", {"message": "All agents have completed their tasks!"})

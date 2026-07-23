@@ -40,6 +40,30 @@ export const AgentLogStream: React.FC<AgentLogStreamProps> = ({
         badge: "bg-blue-500/20 text-blue-300",
         title: "RESEARCHER"
       };
+    } else if (name.includes("reviewer")) {
+      return {
+        avatar: "🧐",
+        bgColor: "bg-amber-600/10 border-amber-500/30",
+        textColor: "text-amber-400",
+        badge: "bg-amber-500/20 text-amber-300",
+        title: "REVIEWER"
+      };
+    } else if (name.includes("analyst")) {
+      return {
+        avatar: "📊",
+        bgColor: "bg-emerald-600/10 border-emerald-500/30",
+        textColor: "text-emerald-400",
+        badge: "bg-emerald-500/20 text-emerald-300",
+        title: "ANALYST"
+      };
+    } else if (name.includes("writer")) {
+      return {
+        avatar: "✍️",
+        bgColor: "bg-violet-600/10 border-violet-500/30",
+        textColor: "text-violet-400",
+        badge: "bg-violet-500/20 text-violet-300",
+        title: "WRITER"
+      };
     }
     return {
       avatar: "🤖",
@@ -157,7 +181,7 @@ export const AgentLogStream: React.FC<AgentLogStreamProps> = ({
       {activeAgent === "Done" && (
         <div className="mt-4 p-3 bg-emerald-600/10 border border-emerald-500/30 rounded-xl flex items-center gap-2.5 animate-bounce-slow text-xs text-emerald-300 font-medium">
           <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400" />
-          <span>Research complete! Browse findings in the viewport.</span>
+          <span>Post creation complete! Browse outputs in tabs.</span>
         </div>
       )}
     </div>
