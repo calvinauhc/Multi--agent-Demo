@@ -18,6 +18,20 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def read_root():
+    return {
+        "title": "Agentic Property Market Research API",
+        "version": "2.1",
+        "status": "healthy",
+        "endpoints": {
+            "root": "/",
+            "health": "/health",
+            "generate": "/api/generate?query=<topic>&provider=<mock/openai/anthropic/gemini>"
+        },
+        "docs": "/docs"
+    }
+
 @app.get("/health")
 def health_check():
     return {"status": "ok", "message": "Multi-agent backend is healthy!"}
