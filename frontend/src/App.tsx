@@ -47,7 +47,15 @@ function App() {
     setPost("");
 
     // Build Server Sent Events connection url
-    const baseUrl = "http://localhost:8000/api/generate";
+    let baseUrl = "http://localhost:8000/api/generate";
+    if (window.location.hostname === "127.0.0.1") {
+      baseUrl = "http://127.0.0.1:8000/api/generate";
+    } else if (window.location.hostname !== "localhost") {
+      // Robust proxy port replacement (e.g., 5173 -> 8000)
+      baseUrl = window.location.origin
+        .replace("5173", "8000")
+        .replace(":5173", ":8000") + "/api/generate";
+    }
     const params = new URLSearchParams({
       query: query.trim(),
       tone: tone,
@@ -61,7 +69,10 @@ function App() {
     const eventSourceUrl = `${baseUrl}?${params.toString()}`;
 
     // Establish SSE Connection
-    const eventSource = new EventSource(eventSourceUrl);
+    // Support authenticated Coder/VS Code proxies by passing credentials (cookies)
+    const eventSource = new EventSource(eventSourceUrl, {
+      withCredentials: true,
+    });
 
     // EventSource error handler
     eventSource.onerror = (e) => {

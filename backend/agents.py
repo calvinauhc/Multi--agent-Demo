@@ -35,7 +35,7 @@ class MultiAgentOrchestrator:
         self.api_key = api_key or os.getenv("LLM_API_KEY")
         self.provider = provider if api_key or os.getenv("LLM_API_KEY") else "mock"
 
-    async def run(self) -> AsyncGenerator[str, None]:
+    async def run(self) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Orchestrates CrewAI collaboration between Researcher, Reviewer, Analyst, and Writer.
         Yields serialized JSON events streamed to the client via SSE.
@@ -245,42 +245,141 @@ class MultiAgentOrchestrator:
         else:
             raise ValueError(f"Unsupported CrewAI provider: {self.provider}")
 
-    def _format_event(self, event_type: str, data: Any) -> str:
-        """Helper to format SSE payload"""
-        return f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
+    def _format_event(self, event_type: str, data: Any) -> Dict[str, Any]:
+        """Helper to format SSE payload as a dict for sse-starlette"""
+        return {
+            "event": event_type,
+            "data": json.dumps(data)
+        }
 
     # --- SIMULATED/MOCK EVENT SEQUENCE FOR INSTANT DEMOS ---
-    async def _run_simulated_flow(self) -> AsyncGenerator[str, None]:
+    async def _run_simulated_flow(self) -> AsyncGenerator[Dict[str, Any], None]:
+        query_lower = self.query.lower()
+
+        # 1. Determine Location
+        if any(kw in query_lower for kw in ["london", "uk", "british", "united kingdom"]):
+            location = "London, United Kingdom"
+            sources = "HM Land Registry, UK National Housing Index, Rightmove Report"
+            local_currency = "£"
+            yields_condo = "3.8% - 4.5%"
+            yields_landed = "2.2% - 2.8%"
+            cagr = "4.8%"
+            inflation = "2.4%"
+            location_adj = "commuters and zone-dwellers moving outward to suburban hubs"
+            architecture = "Victorian redbrick townhouse with a modern glass extension"
+        elif any(kw in query_lower for kw in ["new york", "nyc", "manhattan", "brooklyn", "usa", "american"]):
+            location = "New York City, USA"
+            sources = "Zillow Market Intelligence, StreetEasy Index, NY Housing Board"
+            local_currency = "$"
+            yields_condo = "4.2% - 5.1%"
+            yields_landed = "2.5% - 3.2%"
+            cagr = "5.6%"
+            inflation = "2.2%"
+            location_adj = "young professionals shifting towards Brooklyn and Outer Borough hubs"
+            architecture = "lofted brick-and-iron industrial conversion in Brooklyn"
+        elif any(kw in query_lower for kw in ["sydney", "australia", "melbourne"]):
+            location = "Sydney, Australia"
+            sources = "CoreLogic Home Value Index, ABS Housing Statistics"
+            local_currency = "A$"
+            yields_condo = "4.0% - 4.7%"
+            yields_landed = "2.3% - 2.9%"
+            cagr = "5.1%"
+            inflation = "2.3%"
+            location_adj = "coastal and outer-western lifestyle estates"
+            architecture = "modern pavilion-style beachside house with exposed raw timber"
+        elif any(kw in query_lower for kw in ["seattle"]):
+            location = "Seattle, USA"
+            sources = "Northwest MLS, King County Property Records, Redfin Analytics"
+            local_currency = "$"
+            yields_condo = "4.5% - 5.3%"
+            yields_landed = "2.6% - 3.4%"
+            cagr = "6.1%"
+            inflation = "2.2%"
+            location_adj = "tech workers seeking suburban green belt developments"
+            architecture = "contemporary Pacific Northwest cedar-and-glass cabin home"
+        elif any(kw in query_lower for kw in ["tokyo", "japan"]):
+            location = "Tokyo, Japan"
+            sources = "MLIT Japan Housing Index, Tokyo Metropolitan Government Records"
+            local_currency = "¥"
+            yields_condo = "3.4% - 4.2%"
+            yields_landed = "1.8% - 2.4%"
+            cagr = "3.2%"
+            inflation = "1.1%"
+            location_adj = "suburban Saitama and Chiba transit corridors"
+            architecture = "ultra-minimalist micro-apartment with modular concrete frames"
+        else:
+            location = "Singapore"
+            sources = "Urban Redevelopment Authority Index (URA), Real Estate Analytics, HDB Registry"
+            local_currency = "S$"
+            yields_condo = "4.1% - 4.8%"
+            yields_landed = "2.5%"
+            cagr = "5.3%"
+            inflation = "2.1%"
+            location_adj = "young buyers prioritizing mature estates and outer fringe regional centers"
+            architecture = "modern, green tropical condominium with cascading vertical gardens"
+
+        # 2. Determine Property Type / Concept
+        if any(kw in query_lower for kw in ["co-living", "co living", "nomad", "shared"]):
+            prop_type = "Co-Living & Shared Spaces"
+            yield_range = "5.5% - 7.2%"
+            demographics = "Millennial freelancers and digital nomads prioritizing flex leases, fast fiber, and communal social hubs."
+            core_message = "Why co-living assets are offering almost DOUBLE the yields of traditional long-term rentals in high-density areas."
+            photo_prompt_details = "A stylish co-living shared lounge, complete with Scandinavian wooden desks, neon accent lights, thriving houseplants, and a panorama glass wall overlooking the city skyline."
+        elif any(kw in query_lower for kw in ["commercial", "office", "retail", "industrial", "warehouse"]):
+            prop_type = "Commercial & Retail Properties"
+            yield_range = "4.9% - 6.2%"
+            demographics = "SMEs and mid-sized enterprises requiring flexible open-plan layouts, sustainable build specs, and robust logistics infrastructure."
+            core_message = "The flight to quality commercial spaces that blend high corporate rental yields with absolute asset protection."
+            photo_prompt_details = "An elegant, airy modern office floor with modular desks, acoustic felt paneling, smart LED lighting, and polished concrete flooring."
+        elif any(kw in query_lower for kw in ["landed", "house", "villa", "bungalow"]):
+            prop_type = "Landed Estates & Single-Family Homes"
+            yield_range = yields_landed
+            demographics = "High-net-worth multi-generational families valuing privacy, expansive floorplans, and long-term land-scarcity appreciation."
+            core_message = "Landed property investing: Low immediate cash-flow yields, but unbeatable generational wealth preservation and capital gains."
+            photo_prompt_details = f"A gorgeous contemporary multi-level {architecture} with a manicured front lawn, architectural accent uplighting, and sunset illumination."
+        elif any(kw in query_lower for kw in ["eco", "green", "sustainable", "solar", "passive"]):
+            prop_type = "Sustainable Eco-Condominiums"
+            yield_range = "4.2% - 5.0%"
+            demographics = "Eco-conscious tech professionals and ESG-guided investors searching for solar integration, energy-efficient HVACs, and wellness metrics."
+            core_message = "Green premium is real: Sustainable building certifications are driving up both rental tenant retention and asset valuations."
+            photo_prompt_details = "An architectural photograph of a modern LEED-platinum certified green condominium with vertical garden terraces, solar panels on the roof, rainwater harvesting ponds, and soft twilight sun."
+        else:
+            prop_type = "High-Yield Suburban Condominiums"
+            yield_range = yields_condo
+            demographics = "Young professional couples (aged 28-42) valuing remote-work floorplans, proximity to high-speed transit, and wellness lifestyle amenities."
+            core_message = "Why modern suburban properties are beating traditional city-core luxury units on rental yields and net-of-inflation CAGR."
+            photo_prompt_details = f"A beautiful architectural photograph of a modern, ultra-contemporary eco-friendly {architecture}. Features glass facades, lush vertical gardens, cascading terraces, and sunset lighting. The courtyard has a luxurious infinity pool."
+
         # 1. Simulated Researcher logs
         yield self._format_event("log", {
             "agent": "Researcher",
             "action": "Sweeping Sources",
-            "message": "Scraping transaction records, Urban Redevelopment indices, and property publications..."
+            "message": f"Scraping transaction records, localized registries, and housing publication sources for '{location}'..."
         })
         await asyncio.sleep(1.3)
         yield self._format_event("log", {
             "agent": "Researcher",
             "action": "Extracting Data",
-            "message": "Found trends: buyers prioritizing green materials, suburban growth vectors, and smart spaces."
+            "message": f"Found trends: Buyers shifting toward {prop_type} prioritizing regional commutes, yields, and lifestyle layouts."
         })
         await asyncio.sleep(1.3)
 
         research_body = f"""### MARKET INTELLIGENCE REPORT: Property Estate Trends for '{self.query}'
 
 1. **Current Transaction Climate**:
-   - Volume has shifted towards suburban properties and mature regional centers (up 14.2% YoY).
-   - Core Central District premium property prices have stabilized, but rental demand remains exceptionally strong due to a 92% occupancy index.
-   - Buyers are increasingly prioritizing sustainability certifications (green building materials) and wellness amenities.
+   - Volume and buyer appetite have shifted towards {location_adj}.
+   - Premium central district property prices have stabilized, but rental demand remains exceptionally strong, yielding a tight but stable market index.
+   - A significant percentage of active buyers are focusing on "{prop_type}" to optimize entry cost and yield profiles.
 
-2. **Yields & Returns**:
-   - Average rental yield in metropolitan suburban hubs is holding steady at 4.1% - 4.8%.
-   - Prime estate price appreciation has averaged 5.3% CAGR over the last 5 years.
+2. **Yields & Returns in {location}**:
+   - Average rental yield in metropolitan suburban hubs/specialized sectors ({prop_type}) is holding steady at **{yield_range}**.
+   - Prime residential asset price appreciation has averaged **{cagr} CAGR** over the last 5 years (nominal).
 
 3. **Demographics**:
-   - Millennials and Gen-Z buyers represent 38% of home purchases, focusing on "smart-home integration", "commute proximity", and flexible work-from-home layouts.
-   - Downsizing older demographics are looking for highly secure, low-maintenance boutique condominiums.
+   - {demographics}
+   - Older demographics looking to downsize are actively seeking secure, low-maintenance boutique spaces with premium management services.
 
-*Sources: Urban Redevelopment Authority Index (URA), Global Estate Analytics 2026, National Housing Registry.*"""
+*Sources: {sources}, Global Estate Analytics 2026, National Housing Registry.*"""
 
         yield self._format_event("result", {"stage": "research", "data": research_body})
 
@@ -289,7 +388,7 @@ class MultiAgentOrchestrator:
         yield self._format_event("log", {
             "agent": "Reviewer",
             "action": "Compliance Check",
-            "message": "Auditing metrics. Reviewing rental yields and CAGR for landed properties vs condos."
+            "message": f"Auditing metrics in {location}. Reviewing rental yields and CAGR for landed properties vs condos."
         })
         await asyncio.sleep(1.3)
         yield self._format_event("log", {
@@ -299,9 +398,9 @@ class MultiAgentOrchestrator:
         })
         await asyncio.sleep(1.3)
 
-        critique = """**CRITIQUE & COMPLIANCE FEEDBACK**:
-- **Source Verification**: The 4.1%-4.8% rental yields are accurate for condominiums but landed properties are closer to 2.5%. This must be specified.
-- **CAGR Accuracy**: The CAGR figures of 5.3% are raw. Please specify if this is nominal and note the net-inflation rate (currently 2.1%).
+        critique = f"""**CRITIQUE & COMPLIANCE FEEDBACK**:
+- **Source Verification**: The {yield_range} rental yields are accurate for {prop_type} in {location}, but landed single-family properties are closer to {yields_landed}. This must be specified.
+- **CAGR Accuracy**: The CAGR figures of {cagr} are nominal. Please specify that this is raw appreciation and note the net-inflation rate (currently {inflation}).
 - **Compliance Rule**: Real estate advisory disclosure warning must be noted. We are providing general insights, not certified financial or investment advice.
 - **Tone check**: Ensure the output does not make speculative promises about guaranteed returns."""
 
@@ -312,11 +411,11 @@ class MultiAgentOrchestrator:
         yield self._format_event("log", {
             "agent": "Researcher",
             "action": "Data Revision",
-            "message": "Adjusting figures based on Compliance review: Separating condo yields, calculating net CAGR."
+            "message": f"Adjusting figures based on Compliance review: Separating {prop_type} yields and calculating net CAGR."
         })
         await asyncio.sleep(1.3)
 
-        revised_research = research_body + "\n\n[REVISED WITH COMPLIANCE SUGGESTIONS]\n- Landed property rental yields clarified (approx 2.5%).\n- Adjusted prime appreciation (5.3% nominal) for inflation (2.1% net inflation index).\n- Disclaimer: General market information. Not financial advisory."
+        revised_research = research_body + f"\n\n[REVISED WITH COMPLIANCE SUGGESTIONS]\n- Landed property rental yields in {location} clarified (approx {yields_landed}).\n- Adjusted prime appreciation ({cagr} nominal) for inflation ({inflation} net inflation index).\n- Disclaimer: General market information. Not financial advisory."
         yield self._format_event("result", {"stage": "research", "data": revised_research})
 
         # 3. Simulated Analyst logs
@@ -324,35 +423,35 @@ class MultiAgentOrchestrator:
         yield self._format_event("log", {
             "agent": "Analyst",
             "action": "Content Framing",
-            "message": "Designing visual hooks. Decided on: 'Suburban yields vs. Downtown vanity'."
+            "message": f"Designing visual hooks for {location}. Decided on: '{prop_type} yields vs. Downtown luxury vanity'."
         })
         await asyncio.sleep(1.3)
         yield self._format_event("log", {
             "agent": "Analyst",
             "action": "Storyboard Ready",
-            "message": "Proposed a 5-slide carousel layout focusing on young buyer shifts."
+            "message": f"Proposed a 5-slide carousel layout focusing on young buyer shifts in {location.split(',')[0]}."
         })
         await asyncio.sleep(1.3)
 
         analysis = f"""### STRATEGIC SOCIAL OUTLINE: "{self.query}"
 
 **1. Target Audience Persona**:
-- High-earning young professionals (aged 28-42) looking to buy their first or second property.
+- {demographics}
 
 **2. Content Core Angle**:
-- "Suburban gems vs. Central premium": Highlighting the higher rental yield (4.1%-4.8%) of modern suburban condos compared to lower-yield city center luxury units, adjusted for inflation.
+- {core_message}
 
 **3. Psychology Hooks**:
-- **Pattern Interrupt**: "Stop looking at city penthouses. The real money is 30 minutes away."
-- **Authority Hook**: Backed by actual Urban Redevelopment Authority indices and inflation-adjusted CAGR.
+- **Pattern Interrupt**: "Stop looking at city-core vanity assets. The real smart money is looking elsewhere."
+- **Authority Hook**: Backed by actual {sources.split(',')[0]} statistics and inflation-adjusted CAGR.
 
 **4. Suggested Visual Layout**:
 - **Carousel Post (5 Slides)**:
-  - Slide 1: Hook Headline + High-quality image of a modern, green suburban condominium.
-  - Slide 2: The comparison graph (suburban yield 4.5% vs. city center 2.8%).
-  - Slide 3: Demographic shift: Why young buyers are choosing remote-work ready homes.
-  - Slide 4: Real math: How inflation (2.1%) affects your nominal 5.3% asset appreciation.
-  - Slide 5: Call to Action (CTA) pointing to the bio."""
+  - Slide 1: Hook Headline + High-quality image of a modern {prop_type} build in {location}.
+  - Slide 2: The comparison graph (suburban/specialized yield {yield_range} vs. city-core {yields_landed}).
+  - Slide 3: Demographic shift: Why buyers are choosing flexible, work-ready homes.
+  - Slide 4: Real math: How inflation ({inflation}) affects your nominal {cagr} asset appreciation.
+  - Slide 5: Call to Action (CTA) pointing to the link in bio."""
 
         yield self._format_event("result", {"stage": "analysis", "data": analysis})
 
@@ -367,38 +466,38 @@ class MultiAgentOrchestrator:
         yield self._format_event("log", {
             "agent": "Writer",
             "action": "Creating AI Art Recipe",
-            "message": "Formulating detailed Midjourney prompts with architectural aesthetics and cinematic sunset lighting."
+            "message": f"Formulating detailed Midjourney prompts with {prop_type} architectural aesthetics."
         })
         await asyncio.sleep(1.3)
 
         tone_prefix = "💼 **MARKET REPORT** 💼" if self.tone == "professional" else "🔥 **HOT TAKE** 🔥"
         writing = f"""{tone_prefix}
-**Is city-center luxury blinding you to the real real estate cash cows?** 👇
+**Is city-center vanity blinding you to the real real estate cash cows in {location.split(',')[0]}?** 👇
 
-Everyone dreams of owning a penthouse in the middle of the city. But if you’re looking at the actual MATH, suburban properties are quietly walking away with the prize. 🏆
+Everyone dreams of owning the most expensive downtown penthouse. But if you’re looking at the actual MATH, specialized {prop_type} assets are quietly walking away with the prize. 🏆
 
 Here is what the latest market intelligence shows:
 
-📊 **The Yield Gap**: While premium downtown condos average a tight 2.5% - 2.9% rental yield, mature suburban lifestyle hubs are holding strong between **4.1% and 4.8%**!
+📊 **The Yield Gap**: While premium city-center luxury units average a tight {yields_landed} rental yield, mature regional {prop_type} developments are holding strong between **{yield_range}**!
 
-🌱 **The Smart-Home Shift**: 38% of active buyers are Gen-Z/Millennials. They aren't looking for gilded elevators—they want sustainable green-materials, smart-home integration, and flexible workspace floorplans.
+🌱 **The Smart Buyer Shift**: {demographics.split(' prioritizing')[0]} aren't looking for gilded elevators—they want sustainable green-materials, smart-home integration, and flexible workspace floorplans.
 
-📈 **The Appreciation Factor**: Over the last 5 years, prime suburban estates enjoyed a **5.3% CAGR** (nominal). When adjusted for a 2.1% net inflation index, your real asset value is still growing exceptionally strong.
+📈 **The Appreciation Factor**: Over the last 5 years, prime assets in this sector enjoyed a **{cagr} CAGR** (nominal). When adjusted for a {inflation} net inflation index, your real asset value is still growing exceptionally strong.
 
-💡 **The Bottom Line**: Don’t buy for vanity; buy for utility and yield. Suburban lifestyle properties are offering premium returns at a fraction of the entry cost.
+💡 **The Bottom Line**: Don’t buy for vanity; buy for utility and yield. Specialized properties are offering premium returns at a fraction of the entry cost.
 
-What's your move? Are you staying in the city, or heading suburban? Let us know in the comments! 💬
+What's your move? Are you staying downtown, or heading towards {prop_type}? Let us know in the comments! 💬
 
 ---
 
 ### 🏷️ HASHTAG BUNDLE (Copy & Paste):
-#PropertyInvesting #RealEstateTrends #SuburbanProperty #PassiveIncome #RentalYield #HomeBuyingGuide #SmartHomeDesign #MillennialInvestors #PropertyMarket2026 #WealthBuilding #FinancialFreedom #InvestmentAdviceDisclosure #EstatePlanning
+#PropertyInvesting #{location.split(',')[0].replace(' ', '')}RealEstate #RealEstateTrends #{prop_type.replace(' & ', '').replace(' ', '')} #PassiveIncome #RentalYield #HomeBuyingGuide #SmartHomeDesign #PropertyMarket2026 #WealthBuilding #FinancialFreedom #InvestmentAdviceDisclosure #EstatePlanning
 
 ---
 
 ### 🎨 IMAGE GENERATION PROMPT:
 **Prompt for Midjourney / DALL-E 3**:
-*An architectural photograph of a modern, ultra-contemporary eco-friendly suburban condominium. Features glass facades, lush vertical gardens, cascading terraces, and sunset lighting. The courtyard has a luxurious infinity pool. Shot on 35mm lens, realistic, photorealistic, cinematic lighting, 8k resolution, architectural digest style. --ar 4:5*"""
+*{photo_prompt_details} Shot on 35mm lens, realistic, photorealistic, cinematic lighting, 8k resolution, architectural digest style. --ar 4:5*"""
 
         yield self._format_event("result", {"stage": "writer", "data": writing})
 

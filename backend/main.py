@@ -12,7 +12,7 @@ app = FastAPI(title="Multi-Agent Estate Research & Writer API")
 # Enable CORS for frontend development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, specify the exact origins
+    allow_origin_regex="https?://.*",  # Supports credentials (cookies) on wildcard subdomain proxies
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

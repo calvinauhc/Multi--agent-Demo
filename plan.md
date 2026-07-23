@@ -87,3 +87,34 @@ To guarantee a seamless experience out-of-the-box, the backend will support:
 5. **Build Dashboard UI**: Code input forms, interactive timeline (with typing indicators, avatar icons for Researcher 🔍, Reviewer 🧐, Analyst 📊, Writer ✍️), settings, and formatted outputs.
 6. **Frontend Integration**: Hook up `EventSource` in React to point to FastAPI.
 7. **Testing & Polishing**: Ensure smooth rendering of emojis, markdown output, copy-to-clipboard actions, and error handling.
+
+---
+
+## 6. Bug Fixes & Premium Enhancements Plan (Active Work)
+
+We are addressing several issues and implementing enhancements to elevate the dashboard to production-ready status:
+
+### Task 1: Fix the SSE Event-Stream Formatting Bug
+* **The Issue**: In `backend/agents.py`, `_format_event` generates raw strings like `"event: status\ndata: ...\n\n"`. `EventSourceResponse` in `sse-starlette` expects a generator yielding dictionaries with `"event"` and `"data"` keys. When given raw strings, it wraps them entirely in a default `"message"` data event, which prevents custom frontend event listeners like `eventSource.addEventListener("status")` from ever firing.
+* **The Solution**: 
+  - Refactor `_format_event` in `backend/agents.py` to return dictionaries: `{"event": event_type, "data": json.dumps(data)}`.
+  - Refactor `MultiAgentOrchestrator.run()` and `_run_simulated_flow()` to yield these dictionaries directly to `EventSourceResponse`.
+
+### Task 2: Enhance Simulation Mode with Dynamic, Query-Adapted Content
+* **The Issue**: Currently, Simulation Mode outputs the exact same Singapore condo statistics and yields regardless of the user's query.
+* **The Solution**:
+  - Implement a query analyzer in `MultiAgentOrchestrator._run_simulated_flow` that parses the topic for location keywords (e.g., London, New York, Tokyo, Sydney) and property types (e.g., commercial, residential, co-living, industrial, suburban).
+  - Dynamically populate yields, transaction trends, authority sources (e.g., URA, Zillow, UK Land Registry), demographic shifts, visual descriptors, and tone-specific copy based on the parsed query.
+  - This provides a zero-key, high-fidelity experience that behaves exactly like a real LLM but runs instantly and free.
+
+### Task 3: Configure Premium UI CSS Animations for Tailwind v4
+* **The Issue**: Frontend classes like `animate-fadeIn`, `animate-pulse-slow`, and `animate-bounce-slow` are referenced but not fully styled/defined in Tailwind v4 configuration.
+* **The Solution**:
+  - Define custom `@keyframes` and animation utility classes (`.animate-fadeIn`, `.animate-pulse-slow`, and `.animate-bounce-slow`) directly in `frontend/src/index.css` using modern, native CSS transitions.
+
+### Task 4: End-to-End System Verification
+* **The Issue**: Guarantee absolute correctness.
+* **The Solution**:
+  - Verify that the FastAPI backend starts, restarts, and handles SSE correctly.
+  - Use `curl` to test the custom event structure.
+  - Check the frontend console to ensure no errors are thrown during log streaming.
